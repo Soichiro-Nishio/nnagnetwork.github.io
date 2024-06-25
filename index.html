@@ -54,7 +54,7 @@
     <script>
         // Firebaseの設定
         const firebaseConfig = {
-            apiKey: "AIzaSyAMSuzWF7mbCzBuA_MFMBniZdvawDT-eQE",
+　apiKey: "AIzaSyAMSuzWF7mbCzBuA_MFMBniZdvawDT-eQE",
   authDomain: "register-4cac0.firebaseapp.com",
   projectId: "register-4cac0",
   storageBucket: "register-4cac0.appspot.com",
@@ -69,25 +69,40 @@
         function login() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            if (email === "" || password === "") {
+                alert("メールアドレスとパスワードを入力してください。");
+                return;
+            }
             firebase.auth().signInWithEmailAndPassword(email, password)
                 .catch((error) => {
                     console.error("ログインエラー:", error);
-                    alert("ログインに失敗しました。");
+                    alert("ログインに失敗しました: " + error.message);
                 });
         }
 
         function signup() {
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
+            if (email === "" || password === "") {
+                alert("メールアドレスとパスワードを入力してください。");
+                return;
+            }
             firebase.auth().createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    console.log("新規登録成功:", userCredential);
+                    // 必要に応じて他の操作をここに追加
+                })
                 .catch((error) => {
                     console.error("新規登録エラー:", error);
-                    alert("新規登録に失敗しました。");
+                    alert("新規登録に失敗しました: " + error.message);
                 });
         }
 
         function logout() {
             firebase.auth().signOut().then(() => {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('userInfo').style.display = 'none';
+                document.getElementById('timeRecorder').style.display = 'none';
                 console.log("ログアウトしました");
             }).catch((error) => {
                 console.error("ログアウトエラー:", error);
