@@ -39,6 +39,10 @@
 
     <div id="userInfo" style="display:none;">
         <p>ログイン中: <span id="userEmail"></span></p>
+        <form id="userForm">
+            <input type="text" id="displayName" placeholder="表示名">
+            <button type="button" onclick="updateUserInfo()">更新</button>
+        </form>
         <button onclick="logout()">ログアウト</button>
     </div>
 
@@ -51,19 +55,21 @@
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     <script>
         // Firebaseの設定
         const firebaseConfig = {
-　apiKey: "AIzaSyAMSuzWF7mbCzBuA_MFMBniZdvawDT-eQE",
-  authDomain: "register-4cac0.firebaseapp.com",
-  projectId: "register-4cac0",
-  storageBucket: "register-4cac0.appspot.com",
-  messagingSenderId: "656550257470",
-  appId: "1:656550257470:web:d99636ca32df41e82bc26f",
-  measurementId: "G-M31310SBZV"
+            apiKey: "AIzaSyAMSuzWF7mbCzBuA_MFMBniZdvawDT-eQE",
+  　　　　　 authDomain: "register-4cac0.firebaseapp.com",
+            projectId: "register-4cac0",
+            storageBucket: "register-4cac0.appspot.com",
+            messagingSenderId: "656550257470",
+            appId: "1:656550257470:web:d99636ca32df41e82bc26f",
+            measurementId: "G-M31310SBZV"
         };
         // Firebaseの初期化
         firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         // 認証関連の関数
         function login() {
@@ -89,8 +95,12 @@
             }
             firebase.auth().createUserWithEmailAndPassword(email, password)
                 .then((userCredential) => {
+                    // Firestoreにユーザー情報を保存
+                    db.collection('users').doc(userCredential.user.uid).set({
+                        email: email,
+                        displayName: ''
+                    });
                     console.log("新規登録成功:", userCredential);
-                    // 必要に応じて他の操作をここに追加
                 })
                 .catch((error) => {
                     console.error("新規登録エラー:", error);
@@ -115,12 +125,37 @@
                 document.getElementById('userInfo').style.display = 'block';
                 document.getElementById('timeRecorder').style.display = 'block';
                 document.getElementById('userEmail').textContent = user.email;
+                // Firestoreからユーザー情報を取得
+                db.collection('users').doc(user.uid).get().then((doc) => {
+                    if (doc.exists) {
+                        document.getElementById('displayName').value = doc.data().displayName;
+                    } else {
+                        console.log("No such document!");
+                    }
+                }).catch((error) => {
+                    console.log("Error getting document:", error);
+                });
             } else {
                 document.getElementById('loginForm').style.display = 'block';
                 document.getElementById('userInfo').style.display = 'none';
                 document.getElementById('timeRecorder').style.display = 'none';
             }
         });
+
+        function updateUserInfo() {
+            const user = firebase.auth().currentUser;
+            const displayName = document.getElementById('displayName').value;
+            if (user) {
+                db.collection('users').doc(user.uid).update({
+                    displayName: displayName
+                }).then(() => {
+                    alert("ユーザー情報を更新しました");
+                }).catch((error) => {
+                    console.error("ユーザー情報の更新エラー:", error);
+                    alert("ユーザー情報の更新に失敗しました: " + error.message);
+                });
+            }
+        }
 
         // 時間記録関連の関数
         let startTime;
