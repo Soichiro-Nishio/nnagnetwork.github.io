@@ -25,32 +25,46 @@
             margin-top: 20px;
             text-align: left;
         }
+        .page {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <h1>ログ時間記録サイト</h1>
 
-    <div id="loginForm">
-        <input type="email" id="email" placeholder="メールアドレス">
-        <input type="password" id="password" placeholder="パスワード">
+    <!-- ログインページ -->
+    <div id="loginPage" class="page">
+        <input type="email" id="loginEmail" placeholder="メールアドレス">
+        <input type="password" id="loginPassword" placeholder="パスワード">
         <button onclick="login()">ログイン</button>
-        <button onclick="signup()">新規登録</button>
+        <button onclick="showPage('registerPage')">新規登録</button>
     </div>
 
-    <div id="userInfo" style="display:none;">
+    <!-- 新規登録ページ -->
+    <div id="registerPage" class="page">
+        <input type="email" id="registerEmail" placeholder="メールアドレス">
+        <input type="password" id="registerPassword" placeholder="パスワード">
+        <button onclick="signup()">登録</button>
+        <button onclick="showPage('loginPage')">戻る</button>
+    </div>
+
+    <!-- 記録用ページ -->
+    <div id="timeRecorderPage" class="page">
         <p>ログイン中: <span id="userEmail"></span></p>
-        <form id="userForm">
-            <input type="text" id="displayName" placeholder="表示名">
-            <button type="button" onclick="updateUserInfo()">更新</button>
-        </form>
-        <button onclick="logout()">ログアウト</button>
-    </div>
-
-    <div id="timeRecorder" style="display:none;">
-        <button id="startButton">記録スタート</button>
+        <button id="startButton">記録開始</button>
         <button id="stopButton" disabled>記録終了</button>
         <button id="exportButton">CSVエクスポート</button>
+        <button onclick="showPage('editRecordPage')">記録データ変更</button>
+        <button onclick="logout()">ログアウト</button>
         <div id="timeList"></div>
+    </div>
+
+    <!-- 記録データ変更ページ -->
+    <div id="editRecordPage" class="page">
+        <div id="recordList"></div>
+        <button onclick="clearAllRecords()">オールクリア</button>
+        <button onclick="showPage('timeRecorderPage')">戻る</button>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -59,27 +73,41 @@
     <script>
         // Firebaseの設定
         const firebaseConfig = {
-            apiKey: "AIzaSyAMSuzWF7mbCzBuA_MFMBniZdvawDT-eQE",
-  　　　　　 authDomain: "register-4cac0.firebaseapp.com",
-            projectId: "register-4cac0",
-            storageBucket: "register-4cac0.appspot.com",
-            messagingSenderId: "656550257470",
-            appId: "1:656550257470:web:d99636ca32df41e82bc26f",
-            measurementId: "G-M31310SBZV"
+  apiKey: "AIzaSyAMSuzWF7mbCzBuA_MFMBniZdvawDT-eQE",
+  authDomain: "register-4cac0.firebaseapp.com",
+  projectId: "register-4cac0",
+  storageBucket: "register-4cac0.appspot.com",
+  messagingSenderId: "656550257470",
+  appId: "1:656550257470:web:d99636ca32df41e82bc26f",
+  measurementId: "G-M31310SBZV"
         };
-        // Firebaseの初期化
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
+        // ページの表示を切り替える関数
+        function showPage(pageId) {
+            const pages = document.querySelectorAll('.page');
+            pages.forEach(page => {
+                page.style.display = 'none';
+            });
+            document.getElementById(pageId).style.display = 'block';
+        }
+
+        // 初期ページを設定
+        showPage('loginPage');
+
         // 認証関連の関数
         function login() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
             if (email === "" || password === "") {
                 alert("メールアドレスとパスワードを入力してください。");
                 return;
             }
             firebase.auth().signInWithEmailAndPassword(email, password)
+                .then(() => {
+                    showPage('timeRecorderPage');
+                })
                 .catch((error) => {
                     console.error("ログインエラー:", error);
                     alert("ログインに失敗しました: " + error.message);
@@ -87,20 +115,20 @@
         }
 
         function signup() {
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
             if (email === "" || password === "") {
                 alert("メールアドレスとパスワードを入力してください。");
                 return;
             }
             firebase.auth().createUserWithEmailAndPassword(email, password)
                 .then((userCredential) => {
-                    // Firestoreにユーザー情報を保存
                     db.collection('users').doc(userCredential.user.uid).set({
                         email: email,
                         displayName: ''
                     });
                     console.log("新規登録成功:", userCredential);
+                    showPage('loginPage');
                 })
                 .catch((error) => {
                     console.error("新規登録エラー:", error);
@@ -110,9 +138,7 @@
 
         function logout() {
             firebase.auth().signOut().then(() => {
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('timeRecorder').style.display = 'none';
+                showPage('loginPage');
                 console.log("ログアウトしました");
             }).catch((error) => {
                 console.error("ログアウトエラー:", error);
@@ -121,41 +147,12 @@
 
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
-                document.getElementById('loginForm').style.display = 'none';
-                document.getElementById('userInfo').style.display = 'block';
-                document.getElementById('timeRecorder').style.display = 'block';
                 document.getElementById('userEmail').textContent = user.email;
-                // Firestoreからユーザー情報を取得
-                db.collection('users').doc(user.uid).get().then((doc) => {
-                    if (doc.exists) {
-                        document.getElementById('displayName').value = doc.data().displayName;
-                    } else {
-                        console.log("No such document!");
-                    }
-                }).catch((error) => {
-                    console.log("Error getting document:", error);
-                });
+                showPage('timeRecorderPage');
             } else {
-                document.getElementById('loginForm').style.display = 'block';
-                document.getElementById('userInfo').style.display = 'none';
-                document.getElementById('timeRecorder').style.display = 'none';
+                showPage('loginPage');
             }
         });
-
-        function updateUserInfo() {
-            const user = firebase.auth().currentUser;
-            const displayName = document.getElementById('displayName').value;
-            if (user) {
-                db.collection('users').doc(user.uid).update({
-                    displayName: displayName
-                }).then(() => {
-                    alert("ユーザー情報を更新しました");
-                }).catch((error) => {
-                    console.error("ユーザー情報の更新エラー:", error);
-                    alert("ユーザー情報の更新に失敗しました: " + error.message);
-                });
-            }
-        }
 
         // 時間記録関連の関数
         let startTime;
@@ -183,6 +180,18 @@
 
             document.getElementById('startButton').disabled = false;
             document.getElementById('stopButton').disabled = true;
+
+            // Firestoreに記録を保存
+            const user = firebase.auth().currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).collection('records').add(record)
+                    .then(() => {
+                        console.log("記録が保存されました");
+                    })
+                    .catch((error) => {
+                        console.error("記録保存エラー:", error);
+                    });
+            }
         });
 
         document.getElementById('exportButton').addEventListener('click', () => {
@@ -203,6 +212,89 @@
                 document.body.removeChild(link);
             }
         });
+
+        // 記録データ変更関連の関数
+        function loadRecords() {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).collection('records').get()
+                    .then((querySnapshot) => {
+                        const recordList = document.getElementById('recordList');
+                        recordList.innerHTML = '';
+                        querySnapshot.forEach((doc) => {
+                            const record = doc.data();
+                            const listItem = document.createElement('div');
+                            listItem.innerHTML = `
+                                <input type="text" value="${record.start}" data-id="${doc.id}" class="start">
+                                <input type="text" value="${record.end}" data-id="${doc.id}" class="end">
+                                <button onclick="updateRecord('${doc.id}')">更新</button>
+                                <button onclick="deleteRecord('${doc.id}')">削除</button>
+                            `;
+                            recordList.appendChild(listItem);
+                        });
+                    })
+                    .catch((error) => {
+                        console.error("記録読み込みエラー:", error);
+                    });
+            }
+        }
+
+        function updateRecord(id) {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                const start = document.querySelector(`.start[data-id="${id}"]`).value;
+                const end = document.querySelector(`.end[data-id="${id}"]`).value;
+                db.collection('users').doc(user.uid).collection('records').doc(id).update({
+                    start: start,
+                    end: end
+                }).then(() => {
+                    alert("記録が更新されました");
+                }).catch((error) => {
+                    console.error("記録更新エラー:", error);
+                    alert("記録の更新に失敗しました: " + error.message);
+                });
+            }
+        }
+
+        function deleteRecord(id) {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).collection('records').doc(id).delete()
+                    .then(() => {
+                        alert("記録が削除されました");
+                        loadRecords();
+                    })
+                    .catch((error) => {
+                        console.error("記録削除エラー:", error);
+                        alert("記録の削除に失敗しました: " + error.message);
+                    });
+            }
+        }
+
+        function clearAllRecords() {
+            const user = firebase.auth().currentUser;
+            if (user) {
+                db.collection('users').doc(user.uid).collection('records').get()
+                    .then((querySnapshot) => {
+                        const batch = db.batch();
+                        querySnapshot.forEach((doc) => {
+                            batch.delete(doc.ref);
+                        });
+                        return batch.commit();
+                    })
+                    .then(() => {
+                        alert("すべての記録が削除されました");
+                        loadRecords();
+                    })
+                    .catch((error) => {
+                        console.error("記録全削除エラー:", error);
+                        alert("すべての記録の削除に失敗しました: " + error.message);
+                    });
+            }
+        }
+
+        // ページが表示されるたびに記録を読み込む
+        document.getElementById('editRecordPage').addEventListener('show', loadRecords);
     </script>
 </body>
 </html>
