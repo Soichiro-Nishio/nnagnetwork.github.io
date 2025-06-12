@@ -1,0 +1,22 @@
+{
+  "timeZone": "Asia/Tokyo",
+  "dependencies": {},
+  "exceptionLogging": "STACKDRIVER",
+  "oauthScopes": [
+    "https://www.googleapis.com/auth/presentations.currentonly",
+    "https://www.googleapis.com/auth/script.container.ui"
+  ],
+  "addOns": {
+    "common": {
+      "name": "Slides Countdown Timer",
+      "logoUrl": "https://www.gstatic.com/images/icons/material/system/2x/av_timer_black_24dp.png",
+      "layoutProperties": {
+        "primaryColor": "#4285F4"
+      },
+      "useLocaleFromApp": true,
+      "homepageTrigger": {
+        "runFunction": "showSidebar"
+      }
+    }
+  }
+}

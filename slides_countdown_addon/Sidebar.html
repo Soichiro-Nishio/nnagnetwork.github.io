@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body {font-family: Arial, sans-serif; padding: 10px;}
+      input {width: 80px;}
+    </style>
+  </head>
+  <body>
+    <h3>Countdown Timer</h3>
+    <label>Minutes: <input type="number" id="minutes" value="1" min="0"></label><br>
+    <label>Seconds: <input type="number" id="seconds" value="0" min="0" max="59"></label><br>
+    <button onclick="addTimer()">Insert Timer</button>
+    <script>
+      function addTimer() {
+        var m = parseInt(document.getElementById('minutes').value) || 0;
+        var s = parseInt(document.getElementById('seconds').value) || 0;
+        var total = m*60 + s;
+        if (total <= 0) {
+          alert('Please specify a time greater than zero.');
+          return;
+        }
+        google.script.run.insertCountdown(total);
+      }
+    </script>
+  </body>
+</html>
